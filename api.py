@@ -90,6 +90,21 @@ def get_all_user():
 		output.append(user_data)
 	return jsonify({'users':output})
 
+@app.route('/user/<public_id>',methods=['GET'])
+def get_user_byId(public_id):
+	user=User.query.filter_by(public_id=public_id).first()
+
+	if not user:
+		return jsonify({'message':'No user found'})
+	user_data={}
+	user_data['public_id']=user.public_id
+	user_data['name']=user.name
+	user_data['password']=user.password
+
+	return jsonify({'user':user_data})
+
+
+
 @app.route('/user/<user_id>',methods=['PUT'])
 def update_user():
 	return ''

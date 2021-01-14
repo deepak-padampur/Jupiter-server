@@ -1,5 +1,4 @@
 
-
 from flask import Flask,request,jsonify,make_response
 from flask_sqlalchemy import SQLAlchemy
 import uuid
@@ -7,6 +6,7 @@ from werkzeug.security import  generate_password_hash,check_password_hash
 import datetime
 import jwt
 import os
+from functools import wraps
 
 
 #init app
@@ -27,13 +27,14 @@ class Restaurant(db.Model):
 	public_id=db.Column(db.String(50),unique=True)
 	name=db.Column(db.String(80))
 	password=db.Column(db.String(80))
-	admin=db.Column(db.Boolean)
+	seller=db.Column(db.Boolean)
 
 class User(db.Model):
 	id=db.Column(db.Integer,primary_key=True)
 	public_id=db.Column(db.String(50),unique=True)
 	name=db.Column(db.String(50))
 	password=db.Column(db.String(80))
+	seller=db.Column(db.Boolean)
 
 class ProductCatalog(db.Model):
 	id=db.Column(db.Integer,primary_key=True)
@@ -45,9 +46,49 @@ class ProductCatalog(db.Model):
 
 db.create_all()
 
+#creating decorator for the authorization
+
+def token_required(f):
+	@wraps(f)
+	def decorated(*args,**kwargs):
+		token=None
+
+		if 'x-access-token' in request.headers:
+			token=request.headers['x-access-token']
+
+		if not token:
+			return jsonify({'message':'Token is missing'}),401
+
+		try:
+			data=jwt.decode(token,app.config['SECRET_KEY'],options={"verify_signature": False})
+			current_user=User.query.filter_by(public_id=data['public_id']).first()	    
+		except:
+			return jsonify({'message':'Invalid token'}),401
+
+		return f(current_user,*args,**kwargs)
+
+	return decorated
+
+
+#register the restaurant into theh system
+
+@app.route('/restaurant',methods=['POST'])
+def create_restaurant():
+	data=request.get_json()
+
+	hashed_password=generate_password_hash(data['password'],method='sha256')
+
+	new_restaurant= User(public_id=str(uuid.uuid4()),name=data['name'],password=hashed_password,seller=True)
+	db.session.add(new_restaurant)
+	db.session.commit()
+
+	return jsonify({'message':'new user created'}),201
+
+
 
 @app.route('/product-catalog',methods=['POST'])
-def add_product():
+@token_required
+def add_product(current_user):
 	data=request.get_json()
 
 	return ''
@@ -64,7 +105,7 @@ def get_product_byId():
 
 
 @app.route('/restaurant',methods=['GET'])
-def get_app_restaurant():
+def get_all_restaurant():
 	return ''
 
 #create user
@@ -75,7 +116,7 @@ def create_user():
 
 	hashed_password=generate_password_hash(data['password'],method='sha256')
 
-	new_user= User(public_id=str(uuid.uuid4()),name=data['name'],password=hashed_password)
+	new_user= User(public_id=str(uuid.uuid4()),name=data['name'],password=hashed_password,seller=False)
 	db.session.add(new_user)
 	db.session.commit()
 
@@ -84,7 +125,10 @@ def create_user():
 #get all user list
 
 @app.route('/user',methods=['GET'])
-def get_all_user():
+@token_required
+def get_all_user(current_user):
+	if not current_user.seller:
+		return jsonify({'message':'Can not perform that function .Only sellers are allowed'}),404
 	users=User.query.all()
 
 	output=[]
@@ -93,13 +137,15 @@ def get_all_user():
 		user_data['public_id']=user.public_id
 		user_data['name']=user.name
 		user_data['password']=user.password
+		user_data['seller']=user.seller
 		output.append(user_data)
 	return jsonify({'users':output})
 
 #get user by their public id number
 
 @app.route('/user/<public_id>',methods=['GET'])
-def get_user_byId(public_id):
+@token_required
+def get_user_byId(current_user,public_id):
 	user=User.query.filter_by(public_id=public_id).first()
 
 	if not user:
@@ -115,7 +161,8 @@ def get_user_byId(public_id):
 
 
 @app.route('/user/<public_id>',methods=['PUT'])
-def update_user(public_id):
+@token_required
+def update_user(current_user,public_id):
 	user=User.query.filter_by(public_id=public_id).first()
 
 	if not user:
@@ -131,7 +178,8 @@ def update_user(public_id):
 #delete user data
 
 @app.route('/user/<public_id>',methods=['DELETE'])
-def delete_user(public_id):
+@token_required
+def delete_user(current_user,public_id):
 	user=User.query.filter_by(public_id=public_id).first()
 
 	if not user:

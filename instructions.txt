@@ -1,8 +1,6 @@
 Install the dependencies :
 
 1.pip3 install pipenv
-2.pipenv shell   ---activate the virtual environment
+2.pipenv shell   
 3.pipenv install
-
-
-5.python server.py
+4.python api.py

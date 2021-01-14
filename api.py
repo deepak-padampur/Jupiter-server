@@ -44,6 +44,17 @@ class ProductCatalog(db.Model):
 	status=db.Column(db.Boolean)
 	restaurant_id=db.Column(db.Integer)
 
+class Orders(db.Model):
+	id=db.Column(db.Integer,primary_key=True)
+	product_title=db.Column(db.String(50))
+	price=db.Column(db.Integer)
+	current_status=db.Column(db.String(10))
+	restaurant_id=db.Column(db.Integer)
+	product_id=db.Column(db.Integer)
+	customer_id=db.Column(db.Integer)
+     #This will be the public id of the customer
+
+
 db.create_all()
 
 #creating decorator for the authorization
@@ -149,6 +160,10 @@ def get_product_byId():
 def get_all_restaurant():
 	return ''
 
+#place order
+@app.route('/place-order',methods=['POST'])
+def place_order():
+	return ''
 #create user
 
 @app.route('/user',methods=['POST'])

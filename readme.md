@@ -34,9 +34,12 @@ Then you are ready to go
 
 Tables
 
-|Endpoints|Payload|Headers
-|---|---|--- |
-|/restaurant|```{"name":"Restaurant name",password:"12345","seller":true}```| no Headers required
+|Endpoints|REQUEST METHOD|Payload|Headers
+|---|---|---|---|
+|/restaurant|POST|```{"name":"Restaurant name",password:"12345","seller":true}```| no Headers required
+|/login-restaurant|GET|```{"name":"Restaurant name",password:"12345"}```| Authorization-Basic-Authorization
+|/product-catalog|POST|```{"title":"product title","description":"product desc","price":200,"status":true}```|x-access-token:response returned from above request
+
 
 
 

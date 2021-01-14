@@ -16,9 +16,10 @@ app.config['SQLALCHEMY_DATABASE_URI']='sqlite:///'+ os.path.join(basedir,'db.sql
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS']=False
 
 db=SQLAlchemy(app)
+db.create_all()
 
 class Restaurant(db.Model):
-	id:db.Column(db.Integer,primary_key=True)
+	id=db.Column(db.Integer,primary_key=True)
 	public_id=db.Column(db.String(50),unique=True)
 	name=db.Column(db.String(80))
 	password=db.Column(db.String(80))

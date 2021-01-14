@@ -1,6 +1,6 @@
 ## Food Delivery System API
 
-###Features till now
+### Features till now
 
 1.Restaurant can register itself with the system
 
@@ -14,9 +14,9 @@
 
 
 
-###Features to be implemented:
+### Features to be implemented:
 
-1.
+1. Order status shown to user
 #### Steps for running the api after cloning the repo:
 ```pip3 install pipenv```
 

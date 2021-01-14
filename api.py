@@ -21,7 +21,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS']=False
 
 db=SQLAlchemy(app)
 
-
+# data Model
 class Restaurant(db.Model):
 	id=db.Column(db.Integer,primary_key=True)
 	public_id=db.Column(db.String(50),unique=True)
@@ -61,11 +61,34 @@ def token_required(f):
 
 		try:
 			data=jwt.decode(token,app.config['SECRET_KEY'],options={"verify_signature": False})
-			current_user=User.query.filter_by(public_id=data['public_id']).first()	    
+			current_user=User.query.filter_by(public_id=data['public_id']).first()	
+
 		except:
 			return jsonify({'message':'Invalid token'}),401
 
 		return f(current_user,*args,**kwargs)
+
+	return decorated
+#creating decorator for restaurant
+def token_required_restaurant(f):
+	@wraps(f)
+	def decorated(*args,**kwargs):
+		token=None
+
+		if 'x-access-token' in request.headers:
+			token=request.headers['x-access-token']
+
+		if not token:
+			return jsonify({'message':'Token is missing'}),401
+
+		try:
+			data=jwt.decode(token,app.config['SECRET_KEY'],options={"verify_signature": False})
+			current_restaurant=Restaurant.query.filter_by(public_id=data['public_id']).first()	
+			  
+		except:
+			return jsonify({'message':'Invalid token'}),401
+
+		return f(current_restaurant,*args,**kwargs)
 
 	return decorated
 
@@ -78,20 +101,26 @@ def create_restaurant():
 
 	hashed_password=generate_password_hash(data['password'],method='sha256')
 
-	new_restaurant= User(public_id=str(uuid.uuid4()),name=data['name'],password=hashed_password,seller=True)
+	new_restaurant= Restaurant(public_id=str(uuid.uuid4()),name=data['name'],password=hashed_password,seller=True)
 	db.session.add(new_restaurant)
 	db.session.commit()
 
-	return jsonify({'message':'new user created'}),201
+	return jsonify({'message':'Restaurant successfully registered'}),201
 
 
-
+#adding product to the restaurant
 @app.route('/product-catalog',methods=['POST'])
-@token_required
-def add_product(current_user):
+@token_required_restaurant
+def add_product(current_restaurant):
 	data=request.get_json()
+   
+	new_product=ProductCatalog(title=data['title'],description=data['description'],price=data['price'],status=data['status'],restaurant_id=current_restaurant.id)
+	db.session.add(new_product)
+	db.session.commit()
 
-	return ''
+
+
+	return jsonify({"message":"product added successfully"})
 
 
 @app.route('/product-catalog',methods=['GET'])
@@ -208,6 +237,26 @@ def login():
 
 	if check_password_hash(user.password, auth.password):
 		token=jwt.encode({'public_id':user.public_id,'exp':datetime.datetime.utcnow()+datetime.timedelta(minutes=30)},app.config['SECRET_KEY'])
+		return jsonify({'token':token})
+
+	return make_response('Could not verify',401,{'WWW-Authenticate':'Basic realm="Login required!"'})
+
+#registered restaurant login
+
+@app.route('/login-restaurant')
+def loginRestaurant():
+	auth=request.authorization
+
+	if not auth or not auth.username or not auth.password:
+		return make_response('Could not verify',401,{'WWW-Authenticate':'Basic realm="Login required!"'})
+
+	restaurant=Restaurant.query.filter_by(name=auth.username).first()
+
+	if not restaurant:
+		return make_response('Could not verify',401,{'WWW-Authenticate':'Basic realm="Login required!"'})
+
+	if check_password_hash(restaurant.password, auth.password):
+		token=jwt.encode({'public_id':restaurant.public_id,'exp':datetime.datetime.utcnow()+datetime.timedelta(minutes=30)},app.config['SECRET_KEY'])
 		return jsonify({'token':token})
 
 	return make_response('Could not verify',401,{'WWW-Authenticate':'Basic realm="Login required!"'})

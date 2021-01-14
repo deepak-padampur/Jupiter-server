@@ -125,7 +125,19 @@ def add_product(current_restaurant):
 
 @app.route('/product-catalog',methods=['GET'])
 def get_all_product():
-	return ''
+	products=ProductCatalog.query.all()
+
+	output=[]
+	for product in products:
+		product_data={}
+		product_data['id']=product.id
+		product_data['title']=product.title
+		product_data['description']=product.description
+		product_data['price']=product.price
+		product_data['status']=product.status
+		product_data['restaurant_id']=product.restaurant_id
+		output.append(product_data)
+	return jsonify({'products':output})
 
 @app.route('/product-catalog/<restaurant_id>',methods=['GET'])
 def get_product_byId():

@@ -9,6 +9,9 @@ sqlalchemy = "*"
 flask-sqlalchemy = "*"
 uuid = "*"
 werkzeug = "*"
+jwt = "*"
+datetime = "*"
+pyjwt = "*"
 
 [dev-packages]
 

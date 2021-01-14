@@ -46,6 +46,8 @@ db.create_all()
 
 @app.route('/product-catalog',methods=['POST'])
 def add_product():
+	data=request.get_json()
+
 	return ''
 
 
@@ -74,6 +76,19 @@ def create_user():
 	db.session.commit()
 
 	return jsonify({'message':'new user created'})
+
+@app.route('/user',methods=['GET'])
+def get_all_user():
+	users=User.query.all()
+
+	output=[]
+	for user in users:
+		user_data={}
+		user_data['public_id']=user.public_id
+		user_data['name']=user.name
+		user_data['password']=user.password
+		output.append(user_data)
+	return jsonify({'users':output})
 
 @app.route('/user/<user_id>',methods=['PUT'])
 def update_user():
